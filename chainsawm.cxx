@@ -420,6 +420,22 @@ void on_key_press(const XKeyPressedEvent& xev) {
 			wm.master_width += PX_INCREMENT_MASTER;
 		} else if(xev.keycode == XKeysymToKeycode(wm.dpy, KEY_SHRINK_MASTER)) {
 			wm.master_width -= PX_INCREMENT_MASTER;
+		} else if(xev.keycode == XKeysymToKeycode(wm.dpy, XK_1)) {
+			wm.set_wkspc(1);
+		} else if(xev.keycode == XKeysymToKeycode(wm.dpy, XK_2)) {
+			wm.set_wkspc(2);
+		} else if(xev.keycode == XKeysymToKeycode(wm.dpy, XK_3)) {
+			wm.set_wkspc(3);
+		} else if(xev.keycode == XKeysymToKeycode(wm.dpy, XK_4)) {
+			wm.set_wkspc(4);
+		} else if(xev.keycode == XKeysymToKeycode(wm.dpy, XK_5)) {
+			wm.set_wkspc(5);
+		} else if(xev.keycode == XKeysymToKeycode(wm.dpy, XK_6)) {
+			wm.set_wkspc(6);
+		} else if(xev.keycode == XKeysymToKeycode(wm.dpy, XK_7)) {
+			wm.set_wkspc(7);
+		} else if(xev.keycode == XKeysymToKeycode(wm.dpy, XK_8)) {
+			wm.set_wkspc(8);
 		}
 }
 
