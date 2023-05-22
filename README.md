@@ -1,6 +1,8 @@
 # chainsawm
 
-<img style="float: right;" width=25% src="logo.png">
+<div style="text-align: center;">
+    <img width=25% src="logo.png">
+</div>
 
 ## Window manager that aims to keep its code and functionality sharp.
 
