@@ -17,6 +17,10 @@
 
 #define MODIFIER Mod4Mask
 
+#define BUTTON_FOCUS 1
+
+#define NUM_WORKSPACES 4
+
 #define KEY_KILL_WM XK_e
 
 #define KEY_CLOSE XK_q
@@ -33,4 +37,3 @@
 #define KEY_SHRINK_MASTER XK_bracketleft
 #define PX_INCREMENT_MASTER 50
 
-#define BUTTON_FOCUS 1

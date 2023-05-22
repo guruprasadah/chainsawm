@@ -1,4 +1,5 @@
 #include "config.h"
+#include <X11/Xlib.h>
 
 #define GET_ATOM(name) XInternAtom(wm.dpy, name, False)
 
@@ -62,9 +63,12 @@ public:
 struct client {
 public:
 	Window xwin;
+
 	bool b_manage;
 	bool b_strut;
 	bool b_force_kill;
+
+	unsigned int workspace;
 	
 	struct {
 	public:
@@ -81,11 +85,22 @@ public:
 	Display* dpy = nullptr;
 	Screen* screen = nullptr;
 	Window root = None;
+
 	int dpy_x = 0, dpy_y = 0;
+
 	std::list<client*> clients;
-	client* focus = nullptr;
+	client* master[NUM_WORKSPACES] = {nullptr};
 	unsigned int master_width = DEFAULT_MASTER_SIZE;
+
 	Cursor cursor;
+
+	unsigned int current_workspace = 1;
+	unsigned int last_workspace = 1;
+
+	void set_wkspc(unsigned int wkspc) {
+		this->last_workspace = this->current_workspace;
+		this->current_workspace = wkspc;
+	}
 
 	struct {
 	public:
@@ -235,15 +250,15 @@ void on_create(const XCreateWindowEvent& xev) {
 void on_destroy(const XDestroyWindowEvent& xev) {
 	for(auto it = wm.clients.begin(); it != wm.clients.end(); it++) {
 		auto c = *it;
-		if(wm.focus && c->xwin == xev.window) {
-			if(c->xwin == wm.focus->xwin) {
+		if(wm.master[wm.current_workspace] && c->xwin == xev.window) {
+			if(c->xwin == wm.master[wm.current_workspace]->xwin) {
 				if(wm.clients.size() == 1) {
-					wm.focus = nullptr;
+					wm.master[wm.current_workspace] = nullptr;
 				} else {
 					if(std::next(it) != wm.clients.end()) {
-						wm.focus = (*it);
+						wm.master[wm.current_workspace] = (*it);
 					} else {
-						wm.focus = (*std::prev(it));
+						wm.master[wm.current_workspace] = (*std::prev(it));
 					}
 				}	
 			}
@@ -272,10 +287,18 @@ void on_configure(const XConfigureRequestEvent& xev) {
 
 }
 
-unsigned int managed_count() {
+unsigned int total_managed_count() {
 	unsigned int cnt = 0;
 	for(auto c : wm.clients) {
 		if(c->b_manage) cnt += 1;
+	}
+	return cnt;
+}
+
+unsigned int managed_count() {
+	unsigned int cnt = 0;
+	for(auto c : wm.clients) {
+		if(c->b_manage && c->workspace == wm.current_workspace) cnt += 1;
 	}
 	return cnt;
 }
@@ -287,6 +310,10 @@ void setup_keybinds(Window xwin) {
 	GRAB_KEY(KEY_OPEN_TERMINAL, MODIFIER);
 	GRAB_KEY(KEY_GROW_MASTER, MODIFIER);
 	GRAB_KEY(KEY_SHRINK_MASTER, MODIFIER);
+
+	for(unsigned int i = 0; i <= NUM_WORKSPACES; i++) {
+		GRAB_KEY(XStringToKeysym(std::to_string(i).c_str()), MODIFIER | ShiftMask);
+	}
 
 	XGrabButton(wm.dpy, BUTTON_FOCUS, MODIFIER, xwin, False, ButtonPressMask, GrabModeAsync, GrabModeAsync, None, None);
 }
@@ -310,7 +337,7 @@ void on_map(const XMapRequestEvent& xev) {
 	wm.clients.push_back(n);
 
 	if(managed_count() == 1 && n->b_manage) {
-		wm.focus = n;
+		wm.master[wm.current_workspace] = n;
 	}
 
 	if(has_prop(n->xwin, atom_wm_strut)) {
@@ -329,6 +356,8 @@ void on_map(const XMapRequestEvent& xev) {
 
 	n->b_force_kill = !win_supports_protocol(n->xwin, atom_wm_delete_window);
 
+	n->workspace = wm.current_workspace;
+
 	XMapWindow(wm.dpy, xev.window);
 	std::cout << "Window mapped\n";
 }
@@ -344,20 +373,24 @@ void manage() {
 	unsigned int stack_count = 0;
 	for(auto c : wm.clients) {
 		if(c->b_manage) {
-			if(managed_count() == 1) {
-				XMoveResizeWindow(wm.dpy, c->xwin, wm.strut.l, wm.strut.t, wm.dpy_x - wm.strut.r - wm.strut.l, wm.dpy_y - wm.strut.b - wm.strut.t);
-			} else {
-				if(wm.focus) {
-					if(wm.focus == c) {
-						XMoveResizeWindow(wm.dpy, c->xwin, wm.strut.l, wm.strut.t, wm.master_width - wm.strut.l, wm.dpy_y - wm.strut.t - wm.strut.b);
-					} else {
-						unsigned int py = (((wm.dpy_y - wm.strut.t - wm.strut.b) / (managed_count() - 1)) * stack_count) + wm.strut.t;
-						unsigned int w = (wm.dpy_x - wm.master_width - wm.strut.r);
-						unsigned int h = ((wm.dpy_y - wm.strut.t - wm.strut.b) / (managed_count() - 1));
-						XMoveResizeWindow(wm.dpy, c->xwin, wm.master_width, py, w, h);
-						stack_count += 1;
+			if(c->workspace == wm.current_workspace) {
+				if(managed_count() == 1) {
+					XMoveResizeWindow(wm.dpy, c->xwin, wm.strut.l, wm.strut.t, wm.dpy_x - wm.strut.r - wm.strut.l, wm.dpy_y - wm.strut.b - wm.strut.t);
+				} else {
+					if(wm.master[wm.current_workspace]) {
+						if(wm.master[wm.current_workspace] == c) {
+							XMoveResizeWindow(wm.dpy, c->xwin, wm.strut.l, wm.strut.t, wm.master_width - wm.strut.l, wm.dpy_y - wm.strut.t - wm.strut.b);
+						} else {
+							unsigned int py = (((wm.dpy_y - wm.strut.t - wm.strut.b) / (managed_count() - 1)) * stack_count) + wm.strut.t;
+							unsigned int w = (wm.dpy_x - wm.master_width - wm.strut.r);
+							unsigned int h = ((wm.dpy_y - wm.strut.t - wm.strut.b) / (managed_count() - 1));
+							XMoveResizeWindow(wm.dpy, c->xwin, wm.master_width, py, w, h);
+							stack_count += 1;
+						}
 					}
 				}
+			} else {
+				XMoveWindow(wm.dpy, c->xwin, wm.dpy_x + 1, wm.dpy_y + 1);
 			}
 		}
 	}
@@ -367,13 +400,13 @@ void manage() {
 }
 
 void set_focus(client* c) {
-	wm.focus = c;
+	wm.master[wm.current_workspace] = c;
 }
 
 void on_key_press(const XKeyPressedEvent& xev) {
-		if(xev.keycode == XKeysymToKeycode(wm.dpy, KEY_KILL_WM)) {
+		
+		if(xev.keycode == XKeysymToKeycode(wm.dpy, KEY_KILL_WM) && xev.state & (MODIFIER | ShiftMask)) {
 			die("User killed wm");
-
 		} else if(xev.keycode == XKeysymToKeycode(wm.dpy, KEY_CLOSE)) {
 			kill_client(match_window(xev.subwindow));
 
