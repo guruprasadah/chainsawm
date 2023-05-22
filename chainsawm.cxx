@@ -19,6 +19,46 @@ Atom atom_wm_protocols;
 
 Atom atom_wm_delete_window;
 
+template <typename ty_coord = float>
+struct vec2 {
+public:
+	ty_coord x, y;
+
+	vec2() : x(0), y(0) {}
+	vec2(ty_coord _x, ty_coord _y) : x(_x), y(_y) {}
+	vec2(ty_coord _s) : x(_s), y(_s) {}
+
+	void operator+(const vec2& rhs) {
+		this->x += rhs.x;
+		this->y += rhs.y;
+	}
+
+	void operator-(const vec2& rhs) {
+		this->x -= rhs.x;
+		this->y -= rhs.y;
+	}
+
+	void operator*(const vec2& rhs) {
+		this->x *= rhs.x;
+		this->y *= rhs.y;
+	}
+
+	void operator*(ty_coord rhs) {
+		this->x *= rhs;
+		this->y *= rhs;
+	}
+
+	void operator/(const vec2& rhs) {
+		this->x /= rhs.x;
+		this->y /= rhs.y;
+	}
+
+	void operator/(ty_coord rhs) {
+		this->x /= rhs;
+		this->y /= rhs;
+	}
+};
+
 struct client {
 public:
 	Window xwin;
@@ -54,6 +94,28 @@ public:
 } wm;
 
 void die(const std::string&);
+Window get_window_under_pointer();
+bool win_supports_protocol(Window xwin, Atom protocol);
+Atom get_atom_prop(Window win, Atom atom, long offset, long length);
+long get_cardinal_prop(Window xwin, Atom atom, long offset);
+void kill_client(client* c);
+unsigned int managed_count();
+bool has_prop(Window xwin, Atom prop);
+int wm_detect(Display* dpy, XErrorEvent* ev);
+int x_error(Display* dpy, XErrorEvent* ev);
+void on_create(const XCreateWindowEvent& xev);
+void on_destroy(const XDestroyWindowEvent& xev);
+void on_configure(const XConfigureRequestEvent& xev);
+void setup_keybinds(Window xwin);
+void on_map(const XMapRequestEvent& xev);
+client* match_window(const Window& xwin);
+void manage();
+void set_focus(client* c);
+void on_key_press(const XKeyPressedEvent& xev);
+void on_button_press(const XButtonPressedEvent& xev);
+void user_init();
+void main_init();
+void init_atoms();
 
 Window get_window_under_pointer() {
 	Window root, child;
@@ -131,8 +193,6 @@ void kill_client(client* c) {
 			XSendEvent(wm.dpy, c->xwin, false, 0, &msg);
 		}
 }
-
-unsigned int managed_count();
 
 void die(const std::string& reason) {
 	std::cout << reason << "\n";
