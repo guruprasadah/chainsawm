@@ -13,3 +13,4 @@ clean:
 
 install:
 	cp $(TARGET) /usr/bin/$(TARGET)
+	chmod +x /usr/bin/$(TARGET)
