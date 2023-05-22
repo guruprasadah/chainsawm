@@ -20,7 +20,10 @@ In true suckless fashion, this window manager is configured entirely using ```co
     [x] EWMH: Bare minimum
     [x] Startup script: Any executable
     [x] Hotkeys: Hack the source code
+    [x] Workspaces: Fixed 8 with no support for external control
 The project is in what I would consider a beta stage, as a lot of features are implemented - but everything has not been wrapped into a shiny new casing.
+
+For default keybinds, look in ```config.h```
 
 ## Installation
 I don't plan on providing package-manager/OS specific scripts. Instead, just ```make install```. Create the startup script at ```~/.config/chainsawm/startup``` and give it executable permissions.
