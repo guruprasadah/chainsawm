@@ -27,6 +27,8 @@
 #define KEY_OPEN_TERMINAL XK_Return
 #define CMD_TERMINAL "st"
 
+#define DEFAULT_MASTER_SIZE 1000
+
 #define KEY_GROW_MASTER XK_bracketright
 #define KEY_SHRINK_MASTER XK_bracketleft
 #define PX_INCREMENT_MASTER 50

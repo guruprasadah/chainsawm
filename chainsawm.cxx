@@ -84,7 +84,7 @@ public:
 	int dpy_x = 0, dpy_y = 0;
 	std::list<client*> clients;
 	client* focus = nullptr;
-	unsigned int master_width = 1000;
+	unsigned int master_width = DEFAULT_MASTER_SIZE;
 	Cursor cursor;
 
 	struct {
